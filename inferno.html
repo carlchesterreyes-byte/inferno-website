@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Modern Inferno — Interactive</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#e07a5f;--muted:#9aa4b2;--glass: rgba(255,255,255,0.04)}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    body{background:linear-gradient(180deg,#071023 0%, #0f1724 100%);color:#e6eef6;display:flex;align-items:flex-start;justify-content:center;padding:32px}
+    .wrap{max-width:1100px;width:100%;display:grid;grid-template-columns:420px 1fr;gap:20px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:18px;box-shadow:0 6px 18px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+    h1{margin:0 0 8px;font-size:20px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    /* Left column */
+    .controls{height:calc(100vh - 80px);overflow:auto}
+    .circle-list{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+    .circle-btn{display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;background:var(--glass);cursor:pointer;border:1px solid rgba(255,255,255,0.02)}
+    .circle-btn:hover{transform:translateY(-3px)}
+    .badge{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));font-weight:700}
+    .meta{flex:1}
+    .meta h3{margin:0;font-size:15px}
+    .meta p{margin:4px 0 0;font-size:12px;color:var(--muted)}
+    .actions{display:flex;gap:8px;margin-top:12px}
+    button.btn{background:transparent;color:var(--accent);border:1px solid rgba(224,122,95,0.12);padding:8px 10px;border-radius:8px;cursor:pointer}
+
+    /* Right column */
+    .preview{height:calc(100vh - 80px);overflow:auto;padding:18px}
+    .title-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .map-wrap{display:flex;gap:12px;align-items:flex-start}
+    .inferno-map{flex:1;min-width:280px}
+    svg{max-width:100%;height:auto}
+
+    /* Modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.7);display:none;align-items:center;justify-content:center;padding:20px}
+    .modal{background:linear-gradient(180deg, #071328, #081425);padding:18px;border-radius:12px;max-width:760px;width:100%;box-shadow:0 12px 40px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+    .modal h2{margin:0 0 6px}
+    .close{background:transparent;border:0;color:var(--muted);cursor:pointer}
+
+    /* Info panel */
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.01));padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);margin-top:12px}
+    .label{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .dropdown{display:flex;gap:8px;align-items:center}
+
+    footer{grid-column:1/-1;margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
+
+    @media (max-width:900px){.wrap{grid-template-columns:1fr;}.controls{order:2}.preview{order:1}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <aside class="card controls">
+      <h1>Modern Inferno — 3 Circles</h1>
+      <p class="lead">Click a circle to view details, open the punishment modal, or reveal the allegory.</p>
+
+      <div class="circle-list" id="circleList">
+        <!-- Buttons populated by script -->
+      </div>
+
+      <div class="panel">
+        <div class="label">Display options</div>
+        <div class="dropdown">
+          <label for="viewMode">Info depth:</label>
+          <select id="viewMode">
+            <option value="summary">Summary</option>
+            <option value="full">Full details</option>
+          </select>
+        </div>
+        <div style="margin-top:10px">
+          <button class="btn" id="showMapLegend">Show Map Legend</button>
+          <button class="btn" id="downloadBtn">Download HTML</button>
+        </div>
+      </div>
+
+    </aside>
+
+    <main class="card preview">
+      <div class="title-row">
+        <div>
+          <h1>Map & Details</h1>
+          <p class="lead">A simple labeled map of this Inferno appears on the left — click circles to explore.</p>
+        </div>
+        <div>
+          <button class="btn" id="openAll">Open all summaries</button>
+        </div>
+      </div>
+
+      <div class="map-wrap">
+        <div class="inferno-map card" style="padding:12px;min-width:320px;max-width:420px">
+          <svg viewBox="0 0 600 600" id="svgMap" aria-labelledby="mapTitle" role="img">
+            <title id="mapTitle">Labeled map of the Modern Inferno with three circles</title>
+            <!-- Background subtle texture -->
+            <defs>
+              <radialGradient id="g1"><stop offset="0%" stop-color="rgba(224,122,95,0.14)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>
+            </defs>
+
+            <!-- Outer circle -> Circle 1 -->
+            <g id="circle-1" class="map-circle" data-id="1" style="cursor:pointer">
+              <circle cx="300" cy="300" r="220" fill="url(#g1)" stroke="#2b2f3a" stroke-width="1"/>
+              <text x="300" y="85" text-anchor="middle" font-size="18" fill="#ffd6c2">1 — Digital Apathy</text>
+            </g>
+
+            <!-- Middle circle -> Circle 2 -->
+            <g id="circle-2" class="map-circle" data-id="2" style="cursor:pointer">
+              <circle cx="300" cy="300" r="140" fill="none" stroke="#3b4754" stroke-width="2"/>
+              <text x="300" y="300" text-anchor="middle" font-size="18" fill="#f6e7da">2 — Performative Harm</text>
+            </g>
+
+            <!-- Inner circle -> Circle 3 -->
+            <g id="circle-3" class="map-circle" data-id="3" style="cursor:pointer">
+              <circle cx="300" cy="300" r="60" fill="none" stroke="#454f5b" stroke-width="2"/>
+              <text x="300" y="325" text-anchor="middle" font-size="14" fill="#f1efe9">3 — Predatory Extraction</text>
+            </g>
+
+            <!-- Labels on side -->
+            <g transform="translate(20,380)">
+              <rect x="0" y="-10" width="160" height="120" rx="8" fill="rgba(255,255,255,0.02)"/>
+              <text x="8" y="8" fill="#e6eef6" font-size="12">Legend</text>
+              <text x="8" y="28" fill="#9aa4b2" font-size="12">• Digital Apathy — Outer ring</text>
+              <text x="8" y="48" fill="#9aa4b2" font-size="12">• Performative Harm — Middle</text>
+              <text x="8" y="68" fill="#9aa4b2" font-size="12">• Predatory Extraction — Inner</text>
+            </g>
+          </svg>
+        </div>
+
+        <div style="flex:1;min-width:280px">
+          <div id="detailCard" class="card" style="padding:12px">
+            <!-- Content populated by script -->
+            <h2 id="detailTitle">Select a circle</h2>
+            <p id="detailDesc" class="lead">Click any circle on the map or the list to see the sin, the symbolic punishment, and its allegory.</p>
+            <div id="detailBody"></div>
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <button class="btn" id="openPunishment">Open Punishment (Modal)</button>
+              <button class="btn" id="openAllegory">Show Allegory</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="label">Visual Representation</div>
+            <p style="margin:0;font-size:13px;color:var(--muted)">A single labeled map is used for the visual representation requirement. Each circle is clickable and explains its label.</p>
+          </div>
+
+          <div class="panel" style="margin-top:8px">
+            <div class="label">Reflection</div>
+            <div id="reflectionText" style="font-size:13px;color:var(--muted)"></div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="card" style="margin-top:14px">
+        <small>Made with care — click circles to explore contrapasso in a modern setting. You can download this single-file HTML using the button on the left.</small>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+    <div class="modal" role="document">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 id="modalTitle">Punishment</h2>
+        <button class="close" id="closeModal">✕</button>
+      </div>
+      <div id="modalContent" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <script>
+    // Data for the three circles
+    const circles = [
+      {
+        id:1,
+        title:'Digital Apathy',
+        description:'The widespread indifference to misinformation, data harms, and the social consequences of online platforms. It’s the refusal to act responsibly online: ignoring harms, failing to verify, and outsourcing moral judgment to algorithms.',
+        punishment:`Eternal buffering: the condemned stand before a massive screen that never finishes loading. Notifications flood them constantly—urgent red alerts, pleas for help, and false headlines—but every attempt to respond freezes, resets, or sends them in circles. They can see clear instructions to help others, but the interface always times out or requires one more click.`,
+        allegory:`The punishment mirrors paralysis and avoidance. Those who ignore responsibility in digital spaces are condemned to an existence where help is always visible yet unobtainable; it points to moral negligence and the flattening of empathy into a stalled interface.`,
+        mapLabel:'Outer ring — widespread phenomenon, visible but distant'
+      },
+      {
+        id:2,
+        title:'Performative Harm',
+        description:'Actions taken for attention or moral signaling that lack real substance or that cause harm despite their virtuous appearance. This includes public virtue-signaling, cancel mobs without due process, and gestures that center the actor over the affected.',
+        punishment:`An audience of mirrors: the sinners perform on a stage to gleaming mirrors that always reflect an idealized, flattering image of themselves. The crowd cheers, but each cheer creates a ripple that breaks something in the world behind the mirrors—homes collapse gently, conversations are silenced, relationships fray. The performers never see the harm; mirrors reflect only themselves.`,
+        allegory:`This punishment highlights the emptiness of virtue without substance. Performative acts that harm others for status are mirrored back, keeping the actor trapped in self-admiration while real damage continues unseen. It instructs viewers to value substance over spectacle.`,
+        mapLabel:'Middle ring — visible, seductive, narrower audience'
+      },
+      {
+        id:3,
+        title:'Predatory Extraction',
+        description:'Systems and people that extract value from vulnerable communities for profit or advantage—data-mining without consent, predatory lending, exploitative labor, and attention economies that monetize suffering.',
+        punishment:`Mining their own shadows: sinners are forced to dig endlessly in a dark pit, extracting glowing tokens that vanish when touched. With each token gathered a piece of their own reflection is taken, leaving them paler and more transparent. The wealth they produce is siphoned away by phantom machines that mimic their voices, leaving them poorer despite their toil.`,
+        allegory:`The punishment shows the extractive loop: the more the predator takes, the less they retain. It teaches that exploiting others corrodes the exploiter's own humanity, and that wealth built on extraction is hollow.`,
+        mapLabel:'Inner ring — concentrated, systemic, hardest to escape'
+      }
+    ];
+
+    // Reflection text
+    const reflection = `These sins reveal modern problems: the scale and distance of digital life make indifference easy; social media amplifies spectacle and rewards surface gestures; and current economic and technological systems enable extraction at scale. Together they point to a society that often values attention, short-term gain, and comfort over responsibility, care, and durable justice.\n\nThe circle I most connect with is Predatory Extraction because it ties economic and technological behavior to moral consequences: I believe systems that profit from vulnerability are among the most harmful today. I hope readers learn that visible outrage, passive scrolling, or small individual gains can contribute to larger structural harms unless we cultivate responsibility, meaningful action, and systems that center dignity over profit.`;
+
+    // Render the list on the left
+    const list = document.getElementById('circleList');
+    circles.forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'circle-btn';
+      el.innerHTML = `
+        <div class="badge">${c.id}</div>
+        <div class="meta">
+          <h3>${c.title}</h3>
+          <p>${c.description.slice(0,100)}${c.description.length>100?'...':''}</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="btn" data-action="open" data-id="${c.id}">Open</button>
+          <button class="btn" data-action="modal" data-id="${c.id}">Punish</button>
+        </div>
+      `;
+      list.appendChild(el);
+    });
+
+    // Helpers
+    function showDetail(id, mode='summary'){
+      const c = circles.find(x=>x.id===id);
+      if(!c) return;
+      document.getElementById('detailTitle').textContent = `${c.id} — ${c.title}`;
+      document.getElementById('detailDesc').textContent = c.description;
+      const body = document.getElementById('detailBody');
+      body.innerHTML = '';
+      // summary or full
+      const descP = document.createElement('p'); descP.style.marginTop='8px'; descP.textContent = (mode==='summary') ? c.description.slice(0,220) + (c.description.length>220?'...':'') : c.description;
+      body.appendChild(descP);
+      const punishDiv = document.createElement('div'); punishDiv.style.marginTop='12px'; punishDiv.innerHTML = `<strong>Symbolic punishment:</strong> ${ (mode==='summary') ? c.punishment.slice(0,160) + (c.punishment.length>160?'...':'') : c.punishment }`;
+      body.appendChild(punishDiv);
+
+      // store selected
+      document.body.dataset.selected = id;
+      // reflection
+      document.getElementById('reflectionText').textContent = reflection;
+    }
+
+    // Modal controls
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalContent = document.getElementById('modalContent');
+    document.getElementById('closeModal').addEventListener('click', ()=> modalBackdrop.style.display='none');
+    modalBackdrop.addEventListener('click', (e)=>{ if(e.target===modalBackdrop) modalBackdrop.style.display='none'; });
+
+    // Map clicks
+    document.querySelectorAll('.map-circle').forEach(g => {
+      g.addEventListener('click', ()=>{
+        const id = Number(g.dataset.id);
+        const mode = document.getElementById('viewMode').value;
+        showDetail(id, mode);
+      });
+    });
+
+    // List button handlers (event delegation)
+    list.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      const id = Number(btn.dataset.id);
+      const action = btn.dataset.action;
+      if(action==='open'){ showDetail(id, document.getElementById('viewMode').value); }
+      if(action==='modal'){ openPunishment(id); }
+    });
+
+    // Right-panel buttons
+    document.getElementById('openPunishment').addEventListener('click', ()=>{
+      const id = Number(document.body.dataset.selected||1); openPunishment(id);
+    });
+    document.getElementById('openAllegory').addEventListener('click', ()=>{
+      const id = Number(document.body.dataset.selected||1); showAllegory(id);
+    });
+
+    function openPunishment(id){
+      const c = circles.find(x=>x.id===id);
+      if(!c) return;
+      document.getElementById('modalTitle').textContent = `${c.title} — The Punishment`;
+      modalContent.innerHTML = `<p style="margin:0 0 8px">${c.punishment}</p><p style="margin:0;color:${'var(--muted)'}"><strong>Allegory:</strong> ${c.allegory}</p>`;
+      modalBackdrop.style.display='flex';
+    }
+    function showAllegory(id){
+      const c = circles.find(x=>x.id===id);
+      if(!c) return;
+      alert(c.title + "\n\nAllegory:\n" + c.allegory);
+    }
+
+    // Open all summaries
+    document.getElementById('openAll').addEventListener('click', ()=>{
+      const all = circles.map(c => `${c.id}. ${c.title} — ${c.description.slice(0,160)}${c.description.length>160?'...':''}`).join('\n\n');
+      alert('All circles:\n\n'+all);
+    });
+
+    // show legend
+    document.getElementById('showMapLegend').addEventListener('click', ()=>{
+      alert('Legend:\n\n1 — Digital Apathy (outer)\n2 — Performative Harm (middle)\n3 — Predatory Extraction (inner)');
+    });
+
+    // download single-file html
+    document.getElementById('downloadBtn').addEventListener('click', ()=>{
+      const blob = new Blob([document.documentElement.outerHTML], {type:'text/html'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='modern-inferno.html'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    // initialize with circle 1
+    showDetail(1, 'summary');
+
+  </script>
+</body>
+</html>
